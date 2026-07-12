@@ -3,7 +3,7 @@ import HealthScoreCard from "../../components/dashboard/HealthScoreCard";
 import user from "../../data/user";
 import TodayProgress from "../../components/dashboard/TodayProgress";
 import TodayChecklist from "../../components/dashboard/TodayChecklist";
-import WeightChart from "../../components/dashboard/WeightChart";
+import WeightChart from "../../components/dashboard/charts/WeightChart";
 
 export default function Dashboard() {
   return (
