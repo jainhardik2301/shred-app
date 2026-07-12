@@ -1,49 +1,56 @@
 import ProgressBar from "./ProgressBar";
-import user from "../../data/user";
+import { useApp } from "../../contexts/AppContext";
 
 export default function TodayProgress() {
+  const { appData } = useApp();
+
+  if (!appData.goals || !appData.today) {
+    return null;
+  }
+
   return (
-    <div className="rounded-2xl bg-slate-900 p-8 mt-8">
-      <h2 className="text-2xl font-bold mb-8">
+    <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-lg">
+      <h2 className="mb-8 text-2xl font-bold">
         Today's Progress
       </h2>
 
       <ProgressBar
         title="Calories"
-        value={user.today.calories}
-        goal={user.goals.targetCalories}
+        value={appData.today.calories}
+        goal={appData.goals.calories}
         unit="kcal"
         color="bg-orange-500"
       />
 
       <ProgressBar
         title="Protein"
-        value={user.today.protein}
-        goal={user.goals.targetProtein}
+        value={appData.today.protein}
+        goal={appData.goals.protein}
         unit="g"
         color="bg-emerald-500"
       />
 
       <ProgressBar
         title="Water"
-        value={user.today.water}
-        goal={user.goals.targetWater}
+        value={appData.today.water}
+        goal={appData.goals.water}
         unit="L"
         color="bg-sky-500"
       />
 
       <ProgressBar
         title="Steps"
-        value={user.today.steps}
-        goal={user.goals.targetSteps}
+        value={appData.today.steps}
+        goal={appData.goals.stepGoal}
         color="bg-violet-500"
       />
 
       <ProgressBar
         title="Sleep"
-        value={user.today.sleep}
-        goal={user.goals.targetsleep}
-        color="bg-violet-500"
+        value={appData.today.sleep}
+        goal={8}
+        unit="hrs"
+        color="bg-purple-500"
       />
     </div>
   );

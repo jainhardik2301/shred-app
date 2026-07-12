@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase/firebaseConfig";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function Register() {
         password
       );
 
-      alert("Account Created Successfully!");
+      navigate("/dashboard");
     } catch (err) {
       alert(err.message);
     }

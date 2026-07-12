@@ -1,44 +1,58 @@
 import StatCard from "../../components/ui/StatCard";
 import HealthScoreCard from "../../components/dashboard/HealthScoreCard";
-import user from "../../data/user";
 import TodayProgress from "../../components/dashboard/TodayProgress";
 import TodayChecklist from "../../components/dashboard/TodayChecklist";
 import WeightChart from "../../components/dashboard/charts/WeightChart";
+import { useApp } from "../../contexts/AppContext";
 
 export default function Dashboard() {
+  const { appData } = useApp();
+
+  if (!appData.profile || !appData.goals) {
+    return (
+      <div className="p-10 text-white">
+        No profile found. Please complete onboarding.
+      </div>
+    );
+  }
+
   return (
-    <div>   
+    <div>
       <h1 className="mb-8 text-4xl font-bold">
         Dashboard
       </h1>
 
-      <div className="grid grid-cols-2 gap-6 mt-8">
+      <div className="mt-8 grid grid-cols-2 gap-6">
+
         <HealthScoreCard />
 
         <StatCard
           title="Weight"
-          value={`${user.profile.currentWeight} kg`}
+          value={`${appData.profile.weight} kg`}
           subtitle="Current Weight"
         />
 
         <StatCard
           title="Protein"
-          value={`${user.today.protein} g`}
-          subtitle={`Goal ${user.goals.targetProtein} g`}
+          value={`${appData.goals.protein} g`}
+          subtitle={`Daily Target`}
           color="text-emerald-400"
         />
 
         <StatCard
           title="Water"
-          value={`${user.today.water} L`}
-          subtitle={`Goal ${user.goals.targetWater} L`}
+          value={`${appData.goals.water} L`}
+          subtitle="Daily Target"
           color="text-sky-400"
         />
+
       </div>
+
       <TodayProgress />
+
       <TodayChecklist />
+
       <WeightChart />
     </div>
-    
   );
 }

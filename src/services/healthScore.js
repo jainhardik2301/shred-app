@@ -1,21 +1,18 @@
-export function calculateHealthScore(user) {
+export function calculateHealthScore(appData) {
+  const { today, goals } = appData;
 
-    const metrics = [
+  const metrics = [
+    goals.protein > 0 ? today.protein / goals.protein : 0,
+    goals.water > 0 ? today.water / goals.water : 0,
+    goals.calories > 0 ? today.calories / goals.calories : 0,
+    goals.stepGoal > 0 ? today.steps / goals.stepGoal : 0,
+    today.sleep / 8, // Default sleep goal: 8 hours
+  ];
 
-        user.today.protein / user.goals.targetProtein,
+  const total = metrics.reduce(
+    (sum, value) => sum + Math.min(value, 1),
+    0
+  );
 
-        user.today.water / user.goals.targetWater,
-
-        user.today.calories / user.goals.targetCalories,
-
-        user.today.sleep / user.goals.targetSleep,
-
-        user.today.steps / user.goals.targetSteps,
-
-    ];
-
-    const total =
-        metrics.reduce((sum, value) => sum + Math.min(value, 1), 0);
-
-    return Math.round((total / metrics.length) * 100);
+  return Math.round((total / metrics.length) * 100);
 }

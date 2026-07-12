@@ -1,8 +1,14 @@
-import user from "../../data/user";
+import { useApp } from "../../contexts/AppContext";
 import { calculateHealthScore } from "../../services/healthScore";
 
 export default function HealthScoreCard() {
-  const score = calculateHealthScore(user);
+  const { appData } = useApp();
+
+if (!appData.goals || !appData.today) {
+  return null;
+}
+
+const score = calculateHealthScore(appData);
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
