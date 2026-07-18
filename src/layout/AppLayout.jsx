@@ -1,18 +1,33 @@
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import Dashboard from "../pages/Dashboard/Dashboard";
 
 export default function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] =
+    useState(false);
+
   return (
-    <div className="flex h-screen bg-slate-950 text-white">
-      <Sidebar />
+    <div className="min-h-screen bg-slate-950 text-white">
+      <div className="flex min-h-screen">
+        <Sidebar
+          open={sidebarOpen}
+          onClose={() =>
+            setSidebarOpen(false)
+          }
+        />
 
-      <div className="flex flex-1 flex-col">
-        <Topbar />
+        <div className="min-w-0 flex-1">
+          <Topbar
+            onMenuClick={() =>
+              setSidebarOpen(true)
+            }
+          />
 
-        <main className="flex-1 overflow-auto p-6">
-          <Dashboard />
-        </main>
+          <main className="overflow-x-hidden p-4 sm:p-6 lg:p-8">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

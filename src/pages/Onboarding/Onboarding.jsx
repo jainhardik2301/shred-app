@@ -35,13 +35,44 @@ function handleChange(e) {
   });  
 }
 function finishOnboarding() {
-  const appData = generateUserProfile(formData);
+  const generatedData =
+    generateUserProfile(formData);
 
-  console.log("APP DATA:", appData);
+  setAppData((prev) => ({
+    ...prev,
 
-  setAppData(appData);
+    profile: {
+      ...prev.profile,
+      ...generatedData.profile,
+      onboardingCompleted: true,
+    },
 
-  navigate("/dashboard");
+    goals: {
+      ...prev.goals,
+      ...generatedData.goals,
+    },
+
+    today: {
+      ...prev.today,
+      ...(generatedData.today || {}),
+    },
+
+    history: {
+      ...prev.history,
+      ...(generatedData.history || {}),
+
+      weight:
+        generatedData.history?.weight ||
+        prev.history?.weight ||
+        [],
+    },
+
+    meals: prev.meals || [],
+  }));
+
+  navigate("/dashboard", {
+    replace: true,
+  });
 }
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">

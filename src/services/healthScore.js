@@ -1,18 +1,43 @@
 export function calculateHealthScore(appData) {
-  const { today, goals } = appData;
+  const today = appData?.today || {};
+  const goals = appData?.goals || {};
+
+  const stepsGoal =
+    Number(goals.steps) ||
+    Number(goals.stepGoal) ||
+    0;
 
   const metrics = [
-    goals.protein > 0 ? today.protein / goals.protein : 0,
-    goals.water > 0 ? today.water / goals.water : 0,
-    goals.calories > 0 ? today.calories / goals.calories : 0,
-    goals.stepGoal > 0 ? today.steps / goals.stepGoal : 0,
-    today.sleep / 8, // Default sleep goal: 8 hours
+    Number(goals.protein) > 0
+      ? (Number(today.protein) || 0) /
+        Number(goals.protein)
+      : 0,
+
+    Number(goals.water) > 0
+      ? (Number(today.water) || 0) /
+        Number(goals.water)
+      : 0,
+
+    Number(goals.calories) > 0
+      ? (Number(today.calories) || 0) /
+        Number(goals.calories)
+      : 0,
+
+    stepsGoal > 0
+      ? (Number(today.steps) || 0) /
+        stepsGoal
+      : 0,
+
+    (Number(today.sleep) || 0) / 8,
   ];
 
   const total = metrics.reduce(
-    (sum, value) => sum + Math.min(value, 1),
+    (sum, value) =>
+      sum + Math.min(Math.max(value, 0), 1),
     0
   );
 
-  return Math.round((total / metrics.length) * 100);
+  return Math.round(
+    (total / metrics.length) * 100
+  );
 }

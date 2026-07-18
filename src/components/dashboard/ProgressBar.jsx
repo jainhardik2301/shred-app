@@ -5,21 +5,40 @@ export default function ProgressBar({
   color = "bg-emerald-500",
   unit = "",
 }) {
-  const percentage = Math.min((value / goal) * 100, 100);
+  const safeValue =
+    Number(value) || 0;
+
+  const safeGoal =
+    Number(goal) || 0;
+
+  const percentage =
+    safeGoal > 0
+      ? Math.min(
+          Math.max(
+            (safeValue / safeGoal) * 100,
+            0
+          ),
+          100
+        )
+      : 0;
 
   return (
     <div className="mb-6">
-      <div className="flex justify-between mb-2">
+      <div className="mb-2 flex justify-between">
         <span className="font-medium text-slate-300">
           {title}
         </span>
 
-        <span className="text-slate-400 text-sm">
-          {value} / {goal ?? "-"} {unit}
+        <span className="text-sm text-slate-400">
+          {safeValue} /{" "}
+          {safeGoal > 0
+            ? safeGoal
+            : "-"}{" "}
+          {unit}
         </span>
       </div>
 
-      <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-3 overflow-hidden rounded-full bg-slate-800">
         <div
           className={`${color} h-full rounded-full transition-all duration-700`}
           style={{

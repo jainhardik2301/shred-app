@@ -1,0 +1,51 @@
+export const defaultWorkoutPlans = [
+  {
+    id: 1,
+    name: "Push Day",
+    day: "Monday",
+    exercises: [1, 2, 3, 4],
+    isDefault: true,
+  },
+  {
+    id: 2,
+    name: "Pull Day",
+    day: "Tuesday",
+    exercises: [5, 6, 7, 8],
+    isDefault: true,
+  },
+  {
+    id: 3,
+    name: "Leg Day",
+    day: "Wednesday",
+    exercises: [9, 10, 11, 12],
+    isDefault: true,
+  },
+  {
+    id: 4,
+    name: "Shoulders",
+    day: "Thursday",
+    exercises: [13, 14, 15],
+    isDefault: true,
+  },
+  {
+    id: 5,
+    name: "Arms",
+    day: "Friday",
+    exercises: [16, 17, 18],
+    isDefault: true,
+  },
+  {
+    id: 6,
+    name: "Cardio",
+    day: "Saturday",
+    exercises: [19, 20, 21, 22],
+    isDefault: true,
+  },
+  {
+    id: 7,
+    name: "Recovery",
+    day: "Sunday",
+    exercises: [23, 24, 25, 26],
+    isDefault: true,
+  },
+];

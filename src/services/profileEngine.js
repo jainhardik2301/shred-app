@@ -43,7 +43,7 @@ export function generateUserProfile(formData) {
     Number(formData.weight)
   );
 
-  const stepGoal = calculateStepGoal(
+  const steps = calculateStepGoal(
     formData.goal
   );
 
@@ -61,6 +61,7 @@ export function generateUserProfile(formData) {
       occupation: formData.occupation,
       foodPreference: formData.foodPreference,
       preferredUnits: formData.preferredUnits,
+      currentWeight: Number(formData.weight),
     },
 
     goals: {
@@ -70,12 +71,14 @@ export function generateUserProfile(formData) {
       calories,
       protein,
       water,
-      stepGoal,
+      steps,
     },
 
     today: {
       calories: 0,
       protein: 0,
+      carbs: 0,
+      fat: 0,
       water: 0,
       steps: 0,
       sleep: 0,
@@ -89,5 +92,7 @@ export function generateUserProfile(formData) {
         },
       ],
     },
+
+    meals: [],
   };
 }

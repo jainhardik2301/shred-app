@@ -1,51 +1,107 @@
-import user from "../data/user";
+import { Menu } from "lucide-react";
+import { useApp } from "../contexts/AppContext";
 
-export default function Topbar() {
-  const hour = new Date().getHours();
+import {
+  formatWeight,
+} from "../utils/unitConversions";
 
-  let greeting = "Good Evening";
+export default function Topbar({
+  onMenuClick,
+}) {
+  const { appData } = useApp();
 
-  if (hour < 12) greeting = "Good Morning";
-  else if (hour < 18) greeting = "Good Afternoon";
+  if (!appData?.profile) {
+    return null;
+  }
 
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const profile =
+    appData.profile || {};
+
+  const name =
+    profile.name || "User";
+
+  const weightUnit =
+    appData?.preferences?.weightUnit ||
+    "kg";
+
+  const hour =
+    new Date().getHours();
+
+  let greeting =
+    "Good Evening";
+
+  if (hour < 12) {
+    greeting =
+      "Good Morning";
+  } else if (hour < 18) {
+    greeting =
+      "Good Afternoon";
+  }
+
+  const today =
+    new Date().toLocaleDateString(
+      "en-IN",
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }
+    );
+
+  const targetWeight =
+    Number(
+      appData?.goals?.targetWeight
+    ) || 0;
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-8 py-5">
+    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-slate-800 bg-slate-900 px-4 py-4 sm:px-6 lg:px-8">
+      {/* Left */}
 
-      <div>
-        <h2 className="text-3xl font-bold">
-          {greeting}, {user.profile.name} 👋
-        </h2>
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="shrink-0 rounded-xl p-2 text-slate-300 transition hover:bg-slate-800 hover:text-white lg:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu size={26} />
+        </button>
 
-        <p className="mt-1 text-slate-400">
-          {today}
-        </p>
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold sm:text-2xl lg:text-3xl">
+            {greeting}, {name} 👋
+          </h2>
+
+          <p className="mt-1 hidden text-sm text-slate-400 sm:block">
+            {today}
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      {/* Right */}
 
-        <div className="text-right">
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="hidden text-right md:block">
           <h3 className="font-semibold">
-            {user.profile.name}
+            {name}
           </h3>
 
           <p className="text-sm text-slate-400">
-            Goal: {user.profile.targetWeight} kg
+            Goal:{" "}
+            {targetWeight > 0
+              ? formatWeight(
+                  targetWeight,
+                  weightUnit
+                )
+              : "—"}
           </p>
         </div>
 
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-xl font-bold">
-          {user.profile.name.charAt(0)}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-base font-bold sm:h-12 sm:w-12 sm:text-lg lg:h-14 lg:w-14 lg:text-xl">
+          {name.charAt(0).toUpperCase()}
         </div>
-
       </div>
-
     </header>
   );
 }
