@@ -6,9 +6,12 @@ import FoodSearchModal from "../../components/nutrition/FoodSearchModal";
 import NutritionInsights from "../../components/nutrition/NutritionInsights";
 
 export default function NutritionDashboard() {
-  const { appData, deleteMeal } = useApp();
+  const { appData, deleteMeal, updateMeal } = useApp();
 
   const [foodModalOpen, setFoodModalOpen] = useState(false);
+
+  const [editingMeal, setEditingMeal] = useState(null);
+const [editingIndex, setEditingIndex] = useState(null);
 
   const meals = appData?.meals || [];
 
@@ -143,11 +146,15 @@ export default function NutritionDashboard() {
             {meals.map((meal, index) => (
 
               <FoodCard
-                key={meal.id || index}
-                meal={meal}
-                index={index}
-                onDelete={deleteMeal}
-              />
+  key={meal.id || index}
+  meal={meal}
+  index={index}
+  onDelete={deleteMeal}
+  onEdit={(meal, index) => {
+    setEditingMeal(meal);
+    setEditingIndex(index);
+  }}
+/>
 
             ))}
 
@@ -189,9 +196,21 @@ export default function NutritionDashboard() {
       {/* ADD MEAL MODAL */}
 
       <FoodSearchModal
-        open={foodModalOpen}
-        onClose={() => setFoodModalOpen(false)}
-      />
+  open={foodModalOpen || editingMeal !== null}
+  onClose={() => {
+    setFoodModalOpen(false);
+    setEditingMeal(null);
+    setEditingIndex(null);
+  }}
+  editingMeal={editingMeal}
+  editingIndex={editingIndex}
+  onUpdateMeal={(index, updatedMeal) => {
+    updateMeal(index, updatedMeal);
+
+    setEditingMeal(null);
+    setEditingIndex(null);
+  }}
+/>
 
     </div>
   );

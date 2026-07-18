@@ -2,13 +2,16 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import { useApp } from "../../contexts/AppContext";
 import QuantitySelector from "./QuantitySelector";
-
 
 export default function FoodSearchModal({
   open,
   onClose,
+  editingMeal = null,
+  editingIndex = null,
+  onUpdateMeal,
 }) {
   const { addMeal } = useApp();
 
@@ -16,15 +19,19 @@ export default function FoodSearchModal({
     useState("");
 
   const [foods, setFoods] =
-  useState([]);
+    useState([]);
 
-const [isSearching, setIsSearching] =
-  useState(false);
+  const [
+    isSearching,
+    setIsSearching,
+  ] = useState(false);
 
-const [searchError, setSearchError] =
-  useState("");
-  
-    const [
+  const [
+    searchError,
+    setSearchError,
+  ] = useState("");
+
+  const [
     selectedFood,
     setSelectedFood,
   ] = useState(null);
@@ -32,92 +39,206 @@ const [searchError, setSearchError] =
   const [quantity, setQuantity] =
     useState(100);
 
-    useEffect(() => {
-  if (!open) return;
+  const isEditing =
+    editingMeal !== null &&
+    editingIndex !== null;
 
-  const query = search.trim();
+  // ---------------------------------
+  // LOAD EXISTING MEAL WHEN EDITING
+  // ---------------------------------
 
-  if (query.length < 2) {
+  useEffect(() => {
+    if (!open) return;
+
+    if (isEditing) {
+      const existingMeal = {
+        id:
+          editingMeal.id ||
+          `edit-${editingIndex}`,
+
+        name:
+          editingMeal.name,
+
+        unit:
+          editingMeal.unit || "g",
+
+        baseQuantity:
+          Number(
+            editingMeal.quantity
+          ) || 100,
+
+        step:
+          editingMeal.unit ===
+          "piece"
+            ? 1
+            : 10,
+
+        calories:
+          Number(
+            editingMeal.calories
+          ) || 0,
+
+        protein:
+          Number(
+            editingMeal.protein
+          ) || 0,
+
+        carbs:
+          Number(
+            editingMeal.carbs
+          ) || 0,
+
+        fat:
+          Number(
+            editingMeal.fat
+          ) || 0,
+
+        source:
+          editingMeal.source ||
+          "Saved Meal",
+
+        brand:
+          editingMeal.brand ||
+          null,
+      };
+
+      setSelectedFood(
+        existingMeal
+      );
+
+      setQuantity(
+        Number(
+          editingMeal.quantity
+        ) || 100
+      );
+
+      setSearch("");
+      setFoods([]);
+      setSearchError("");
+
+      return;
+    }
+
+    setSelectedFood(null);
+    setQuantity(100);
+    setSearch("");
     setFoods([]);
     setSearchError("");
-    return;
-  }
+  }, [
+    open,
+    editingMeal,
+    editingIndex,
+    isEditing,
+  ]);
 
-  const controller =
-    new AbortController();
+  // ---------------------------------
+  // DYNAMIC FOOD SEARCH
+  // ---------------------------------
 
-  const timer = setTimeout(
-    async () => {
-      try {
-        setIsSearching(true);
-        setSearchError("");
+  useEffect(() => {
+    if (!open) return;
 
-        const response =
-          await fetch(
-  `https://shred-ai.onrender.com/api/food-search?q=${encodeURIComponent(
-  query
-)}`,
-            {
-              signal:
-                controller.signal,
+    const query =
+      search.trim();
+
+    if (query.length < 2) {
+      setFoods([]);
+      setSearchError("");
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const timer =
+      setTimeout(
+        async () => {
+          try {
+            setIsSearching(true);
+            setSearchError("");
+
+            const response =
+              await fetch(
+                `https://shred-ai.onrender.com/api/food-search?q=${encodeURIComponent(
+                  query
+                )}`,
+                {
+                  signal:
+                    controller.signal,
+                }
+              );
+
+            if (!response.ok) {
+              throw new Error(
+                "Food search failed."
+              );
             }
-          );
 
-        if (!response.ok) {
-          throw new Error(
-            "Food search failed."
-          );
-        }
+            const data =
+              await response.json();
 
-        const data =
-          await response.json();
+            setFoods(
+              Array.isArray(
+                data.foods
+              )
+                ? data.foods
+                : []
+            );
+          } catch (error) {
+            if (
+              error.name !==
+              "AbortError"
+            ) {
+              console.error(
+                "Food search error:",
+                error
+              );
 
-        setFoods(
-          Array.isArray(data.foods)
-            ? data.foods
-            : []
-        );
-      } catch (error) {
-        if (
-          error.name !==
-          "AbortError"
-        ) {
-          console.error(
-            "Food search error:",
-            error
-          );
+              setFoods([]);
 
-          setFoods([]);
+              setSearchError(
+                "Unable to search foods right now."
+              );
+            }
+          } finally {
+            if (
+              !controller.signal
+                .aborted
+            ) {
+              setIsSearching(
+                false
+              );
+            }
+          }
+        },
+        500
+      );
 
-          setSearchError(
-            "Unable to search foods right now."
-          );
-        }
-      } finally {
-        if (
-          !controller.signal.aborted
-        ) {
-          setIsSearching(false);
-        }
-      }
-    },
-    500
-  );
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [search, open]);
 
-  return () => {
-    clearTimeout(timer);
-    controller.abort();
-  };
-}, [search, open]);
+  if (!open) return null;
 
-if (!open) return null;
+  // ---------------------------------
+  // SELECT FOOD
+  // ---------------------------------
 
   function selectFood(food) {
     setSelectedFood(food);
+
     setQuantity(
-      food.baseQuantity
+      Number(
+        food.baseQuantity
+      ) || 100
     );
   }
+
+  // ---------------------------------
+  // CALCULATE NUTRITION
+  // ---------------------------------
 
   function calculateNutrition(
     value
@@ -131,30 +252,43 @@ if (!open) return null;
       };
     }
 
+    const baseQuantity =
+      Number(
+        selectedFood.baseQuantity
+      ) || 1;
+
     const multiplier =
       Number(value) /
-      selectedFood.baseQuantity;
+      baseQuantity;
 
     return {
-      calories: Math.round(
-        selectedFood.calories *
-          multiplier
-      ),
+      calories:
+        Math.round(
+          Number(
+            selectedFood.calories
+          ) * multiplier
+        ),
 
-      protein: +(
-        selectedFood.protein *
-        multiplier
-      ).toFixed(1),
+      protein:
+        +(
+          Number(
+            selectedFood.protein
+          ) * multiplier
+        ).toFixed(1),
 
-      carbs: +(
-        selectedFood.carbs *
-        multiplier
-      ).toFixed(1),
+      carbs:
+        +(
+          Number(
+            selectedFood.carbs
+          ) * multiplier
+        ).toFixed(1),
 
-      fat: +(
-        selectedFood.fat *
-        multiplier
-      ).toFixed(1),
+      fat:
+        +(
+          Number(
+            selectedFood.fat
+          ) * multiplier
+        ).toFixed(1),
     };
   }
 
@@ -163,11 +297,18 @@ if (!open) return null;
       quantity
     );
 
-  function handleAddMeal() {
+  // ---------------------------------
+  // SAVE ADD / EDIT
+  // ---------------------------------
+
+  function handleSaveMeal() {
     if (!selectedFood) return;
 
     const meal = {
-      id: Date.now(),
+      id:
+        isEditing
+          ? editingMeal.id
+          : Date.now(),
 
       name:
         selectedFood.name,
@@ -189,13 +330,36 @@ if (!open) return null;
 
       fat:
         nutrition.fat,
+
+      source:
+        selectedFood.source ||
+        editingMeal?.source ||
+        "AI Estimate",
+
+      brand:
+        selectedFood.brand ||
+        editingMeal?.brand ||
+        null,
     };
 
-    addMeal(meal);
+    if (
+      isEditing &&
+      typeof onUpdateMeal ===
+        "function"
+    ) {
+      onUpdateMeal(
+        editingIndex,
+        meal
+      );
+    } else {
+      addMeal(meal);
+    }
 
     setSelectedFood(null);
     setQuantity(100);
     setSearch("");
+    setFoods([]);
+    setSearchError("");
 
     onClose();
   }
@@ -204,10 +368,15 @@ if (!open) return null;
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 p-3 sm:p-4">
       <div className="flex min-h-full items-center justify-center">
         <div className="my-4 w-full max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+
           <div className="max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+
             <div className="flex items-center justify-between gap-4">
+
               <h2 className="text-xl font-bold sm:text-2xl">
-                Add Meal
+                {isEditing
+                  ? "Edit Meal"
+                  : "Add Meal"}
               </h2>
 
               <button
@@ -218,11 +387,18 @@ if (!open) return null;
               >
                 ×
               </button>
+
             </div>
+
+            {/* FOOD SEARCH */}
 
             <input
               type="text"
-              placeholder="Search food..."
+              placeholder={
+                isEditing
+                  ? "Search to replace food..."
+                  : "Search food..."
+              }
               value={search}
               onChange={(e) =>
                 setSearch(
@@ -234,44 +410,52 @@ if (!open) return null;
 
             <div className="mt-4 max-h-52 space-y-2 overflow-y-auto">
 
-  {isSearching && (
-    <div className="py-4 text-center text-sm text-slate-400">
-      Searching foods...
-    </div>
-  )}
+              {isSearching && (
+                <div className="py-4 text-center text-sm text-slate-400">
+                  Searching foods...
+                </div>
+              )}
 
-  {searchError && (
-    <div className="py-4 text-center text-sm text-red-400">
-      {searchError}
-    </div>
-  )}
+              {searchError && (
+                <div className="py-4 text-center text-sm text-red-400">
+                  {searchError}
+                </div>
+              )}
 
-  {!isSearching &&
-    !searchError &&
-    search.trim().length >= 2 &&
-    foods.length === 0 && (
-      <div className="py-4 text-center text-sm text-slate-400">
-        No foods found.
-      </div>
-    )}
+              {!isSearching &&
+                !searchError &&
+                search
+                  .trim()
+                  .length >= 2 &&
+                foods.length ===
+                  0 && (
+                  <div className="py-4 text-center text-sm text-slate-400">
+                    No foods found.
+                  </div>
+                )}
 
-  {foods.map(
-    (food) => (
-      <button
-        key={food.id}
-        type="button"
-        onClick={() =>
-          selectFood(food)
-        }
+              {foods.map(
+                (food) => (
+                  <button
+                    key={food.id}
+                    type="button"
+                    onClick={() =>
+                      selectFood(
+                        food
+                      )
+                    }
                     className={`w-full rounded-xl p-3 text-left sm:p-4 ${
-                      selectedFood?.id ===
+                      selectedFood
+                        ?.id ===
                       food.id
                         ? "bg-emerald-500 text-white"
                         : "bg-slate-800 hover:bg-slate-700"
                     }`}
                   >
                     <div className="font-semibold">
-                      {food.name}
+                      {
+                        food.name
+                      }
                     </div>
 
                     <div className="mt-1 text-sm opacity-80">
@@ -290,23 +474,48 @@ if (!open) return null;
                     </div>
 
                     <div className="mt-1 text-xs opacity-60">
-  Source:{" "}
-  {food.source ||
-    "Nutrition Database"}
-</div>
+                      Source:{" "}
+                      {food.source ||
+                        "Nutrition Database"}
+                    </div>
 
-{food.brand && (
-  <div className="mt-1 text-xs opacity-60">
-    {food.brand}
-  </div>
-)}
+                    {food.brand && (
+                      <div className="mt-1 text-xs opacity-60">
+                        {
+                          food.brand
+                        }
+                      </div>
+                    )}
+
                   </button>
                 )
               )}
+
             </div>
+
+            {/* SELECTED / EDITING MEAL */}
 
             {selectedFood && (
               <div className="mt-6">
+
+                {isEditing &&
+                  search.trim()
+                    .length < 2 && (
+                    <div className="mb-5 rounded-xl border border-slate-700 bg-slate-800 p-4">
+
+                      <div className="text-xs uppercase tracking-wide text-slate-500">
+                        Editing
+                      </div>
+
+                      <div className="mt-1 font-semibold">
+                        {
+                          selectedFood.name
+                        }
+                      </div>
+
+                    </div>
+                  )}
+
                 <QuantitySelector
                   quantity={
                     quantity
@@ -322,17 +531,22 @@ if (!open) return null;
                       : selectedFood.unit
                   }
                   step={
-                    selectedFood.step
+                    selectedFood.step ||
+                    (selectedFood.unit ===
+                    "piece"
+                      ? 1
+                      : 10)
                   }
                 />
 
                 <div className="mt-6 rounded-xl bg-slate-800 p-4">
+
                   <div className="font-semibold">
-                    Nutrition
-                    Preview
+                    Nutrition Preview
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4 sm:gap-2">
+
                     <NutritionValue
                       value={
                         nutrition.calories
@@ -354,21 +568,26 @@ if (!open) return null;
                       value={`${nutrition.fat}g`}
                       label="Fat"
                     />
+
                   </div>
+
                 </div>
 
                 <button
                   type="button"
                   onClick={
-                    handleAddMeal
+                    handleSaveMeal
                   }
                   className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-3 font-bold text-white transition hover:bg-emerald-600"
                 >
-                  Add to Today's
-                  Meals
+                  {isEditing
+                    ? "Save Changes"
+                    : "Add to Today's Meals"}
                 </button>
+
               </div>
             )}
+
           </div>
         </div>
       </div>

@@ -44,8 +44,8 @@ export default function FoodCard({
             <button
               type="button"
               onClick={() =>
-                onEdit(index)
-              }
+  onEdit?.(meal, index)
+}
               className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600 sm:flex-none"
             >
               Edit
