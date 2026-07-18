@@ -1,119 +1,10 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { useApp } from "../../contexts/AppContext";
 import QuantitySelector from "./QuantitySelector";
 
-const foods = [
-  {
-    id: 1,
-    name: "Paneer",
-    unit: "g",
-    baseQuantity: 100,
-    step: 10,
-    calories: 265,
-    protein: 18.3,
-    carbs: 1.2,
-    fat: 20.8,
-  },
-  {
-    id: 2,
-    name: "Idli",
-    unit: "piece",
-    baseQuantity: 1,
-    step: 1,
-    calories: 58,
-    protein: 2,
-    carbs: 12,
-    fat: 0.4,
-  },
-  {
-    id: 3,
-    name: "Sambar",
-    unit: "ml",
-    baseQuantity: 100,
-    step: 50,
-    calories: 53,
-    protein: 2.5,
-    carbs: 8,
-    fat: 1.2,
-  },
-  {
-    id: 4,
-    name: "Hung Curd",
-    unit: "g",
-    baseQuantity: 100,
-    step: 10,
-    calories: 90,
-    protein: 10,
-    carbs: 4,
-    fat: 3,
-  },
-  {
-    id: 5,
-    name: "Apple",
-    unit: "piece",
-    baseQuantity: 1,
-    step: 1,
-    calories: 95,
-    protein: 0.5,
-    carbs: 25,
-    fat: 0.3,
-  },
-  {
-    id: 6,
-    name: "Banana",
-    unit: "piece",
-    baseQuantity: 1,
-    step: 1,
-    calories: 105,
-    protein: 1.3,
-    carbs: 27,
-    fat: 0.4,
-  },
-  {
-    id: 7,
-    name: "Sprouts",
-    unit: "g",
-    baseQuantity: 100,
-    step: 10,
-    calories: 30,
-    protein: 3,
-    carbs: 6,
-    fat: 0.2,
-  },
-  {
-    id: 8,
-    name: "Kala Chana",
-    unit: "g",
-    baseQuantity: 100,
-    step: 10,
-    calories: 164,
-    protein: 8.9,
-    carbs: 27,
-    fat: 2.6,
-  },
-  {
-    id: 9,
-    name: "Roti",
-    unit: "piece",
-    baseQuantity: 1,
-    step: 1,
-    calories: 100,
-    protein: 3,
-    carbs: 20,
-    fat: 1,
-  },
-  {
-    id: 10,
-    name: "Milk",
-    unit: "ml",
-    baseQuantity: 100,
-    step: 50,
-    calories: 61,
-    protein: 3.2,
-    carbs: 4.8,
-    fat: 3.3,
-  },
-];
 
 export default function FoodSearchModal({
   open,
@@ -124,7 +15,16 @@ export default function FoodSearchModal({
   const [search, setSearch] =
     useState("");
 
-  const [
+  const [foods, setFoods] =
+  useState([]);
+
+const [isSearching, setIsSearching] =
+  useState(false);
+
+const [searchError, setSearchError] =
+  useState("");
+  
+    const [
     selectedFood,
     setSelectedFood,
   ] = useState(null);
@@ -132,16 +32,85 @@ export default function FoodSearchModal({
   const [quantity, setQuantity] =
     useState(100);
 
-  if (!open) return null;
+    useEffect(() => {
+  if (!open) return;
 
-  const filteredFoods =
-    foods.filter((food) =>
-      food.name
-        .toLowerCase()
-        .includes(
-          search.toLowerCase()
-        )
-    );
+  const query = search.trim();
+
+  if (query.length < 2) {
+    setFoods([]);
+    setSearchError("");
+    return;
+  }
+
+  const controller =
+    new AbortController();
+
+  const timer = setTimeout(
+    async () => {
+      try {
+        setIsSearching(true);
+        setSearchError("");
+
+        const response =
+          await fetch(
+  `http://localhost:3001/api/food-search?q=${encodeURIComponent(
+    query
+  )}`,
+            {
+              signal:
+                controller.signal,
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Food search failed."
+          );
+        }
+
+        const data =
+          await response.json();
+
+        setFoods(
+          Array.isArray(data.foods)
+            ? data.foods
+            : []
+        );
+      } catch (error) {
+        if (
+          error.name !==
+          "AbortError"
+        ) {
+          console.error(
+            "Food search error:",
+            error
+          );
+
+          setFoods([]);
+
+          setSearchError(
+            "Unable to search foods right now."
+          );
+        }
+      } finally {
+        if (
+          !controller.signal.aborted
+        ) {
+          setIsSearching(false);
+        }
+      }
+    },
+    500
+  );
+
+  return () => {
+    clearTimeout(timer);
+    controller.abort();
+  };
+}, [search, open]);
+
+if (!open) return null;
 
   function selectFood(food) {
     setSelectedFood(food);
@@ -264,16 +233,36 @@ export default function FoodSearchModal({
             />
 
             <div className="mt-4 max-h-52 space-y-2 overflow-y-auto">
-              {filteredFoods.map(
-                (food) => (
-                  <button
-                    key={food.id}
-                    type="button"
-                    onClick={() =>
-                      selectFood(
-                        food
-                      )
-                    }
+
+  {isSearching && (
+    <div className="py-4 text-center text-sm text-slate-400">
+      Searching foods...
+    </div>
+  )}
+
+  {searchError && (
+    <div className="py-4 text-center text-sm text-red-400">
+      {searchError}
+    </div>
+  )}
+
+  {!isSearching &&
+    !searchError &&
+    search.trim().length >= 2 &&
+    foods.length === 0 && (
+      <div className="py-4 text-center text-sm text-slate-400">
+        No foods found.
+      </div>
+    )}
+
+  {foods.map(
+    (food) => (
+      <button
+        key={food.id}
+        type="button"
+        onClick={() =>
+          selectFood(food)
+        }
                     className={`w-full rounded-xl p-3 text-left sm:p-4 ${
                       selectedFood?.id ===
                       food.id
@@ -299,6 +288,18 @@ export default function FoodSearchModal({
                       }{" "}
                       {food.unit}
                     </div>
+
+                    <div className="mt-1 text-xs opacity-60">
+  Source:{" "}
+  {food.source ||
+    "Nutrition Database"}
+</div>
+
+{food.brand && (
+  <div className="mt-1 text-xs opacity-60">
+    {food.brand}
+  </div>
+)}
                   </button>
                 )
               )}
