@@ -253,7 +253,7 @@ export async function askAICoach(
   };
 
   const response =
-    await fetch("http://192.168.1.7:3001/api/coach",
+    await fetch("https://shred-ai.onrender.com/api/coach",
       {
         method: "POST",
 
