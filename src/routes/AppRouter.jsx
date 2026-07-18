@@ -6,6 +6,8 @@ import {
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import AppLayout from "../layout/AppLayout";
+import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword/ResetPassword";
 
 import Login from "../pages/Login/Login";
 import Register from "../pages/Register/Register";
@@ -41,6 +43,16 @@ export default function AppRouter() {
           path="/register"
           element={<Register />}
         />
+
+        <Route
+  path="/forgot-password"
+  element={<ForgotPassword />}
+/>
+
+<Route
+  path="/reset-password"
+  element={<ResetPassword />}
+/>
 
 
         {/* AUTHENTICATED ROUTES */}
