@@ -1,6 +1,7 @@
 import ProfileSettings from "../../components/settings/ProfileSettings";
 import GoalSettings from "../../components/settings/GoalSettings";
 import PreferenceSettings from "../../components/settings/PreferenceSettings";
+import SecuritySettings from "../../components/settings/SecuritySettings";
 import DataSettings from "../../components/settings/DataSettings";
 
 export default function Settings() {
@@ -22,6 +23,8 @@ export default function Settings() {
       <GoalSettings />
 
       <PreferenceSettings />
+
+      <SecuritySettings />
 
       <DataSettings />
 
