@@ -54,9 +54,9 @@ const [searchError, setSearchError] =
 
         const response =
           await fetch(
-  `http://localhost:3001/api/food-search?q=${encodeURIComponent(
-    query
-  )}`,
+  `https://shred-ai.onrender.com/api/food-search?q=${encodeURIComponent(
+  query
+)}`,
             {
               signal:
                 controller.signal,
