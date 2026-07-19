@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useApp } from "../../contexts/AppContext";
-import { defaultWorkoutPlans } from "../../data/defaultWorkoutPlans";
 
 export default function DataSettings() {
   const { setAppData } = useApp();
@@ -90,7 +89,7 @@ export default function DataSettings() {
 
       meals: [],
 
-      workoutPlans: defaultWorkoutPlans,
+      workoutPlans: [],
 
       workoutHistory: [],
 

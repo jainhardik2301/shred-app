@@ -6,6 +6,64 @@ export default function WorkoutHistory() {
   const history =
     appData?.workoutHistory || [];
 
+  // ---------------------------------
+  // FORMAT DURATION
+  // ---------------------------------
+
+  function formatDuration(seconds) {
+    const totalSeconds =
+      Number(seconds) || 0;
+
+    const hours =
+      Math.floor(
+        totalSeconds / 3600
+      );
+
+    const minutes =
+      Math.floor(
+        (totalSeconds % 3600) /
+          60
+      );
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes} min`;
+  }
+
+  // ---------------------------------
+  // FORMAT DATE
+  // ---------------------------------
+
+  function formatDate(dateValue) {
+    if (!dateValue) {
+      return "Date unavailable";
+    }
+
+    const date =
+      new Date(dateValue);
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return "Date unavailable";
+    }
+
+    return date.toLocaleString(
+      "en-IN",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }
+    );
+  }
+
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
 
@@ -25,71 +83,153 @@ export default function WorkoutHistory() {
 
       ) : (
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 space-y-4">
 
           {[...history]
             .reverse()
             .slice(0, 10)
-            .map((session) => (
+            .map(
+              (
+                session,
+                index
+              ) => {
 
-              <div
-                key={session.id}
-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-800 p-4"
-              >
+                const duration =
+                  session.durationSeconds ??
+                  session.seconds ??
+                  0;
 
-                <div>
+                const calories =
+                  Number(
+                    session.calories
+                  ) || 0;
 
-                  <h3 className="font-semibold">
-                    {session.planName}
-                  </h3>
+                const totalSets =
+                  Number(
+                    session.totalSets
+                  ) || 0;
 
-                  <p className="mt-1 text-sm text-slate-400">
-                    {new Date(
-                      session.completedAt
-                    ).toLocaleDateString()}
-                  </p>
+                const completedSets =
+                  Number(
+                    session.completedSets
+                  ) || 0;
 
-                </div>
+                const completion =
+                  session.completionPercentage ??
+                  (
+                    totalSets > 0
+                      ? Math.round(
+                          (
+                            completedSets /
+                            totalSets
+                          ) * 100
+                        )
+                      : 0
+                  );
 
-                <div className="flex gap-6 text-sm">
+                return (
 
-                  <div>
-                    <p className="text-slate-400">
-                      Duration
-                    </p>
+                  <div
+                    key={
+                      session.id ||
+                      `${session.completedAt}-${index}`
+                    }
+                    className="rounded-xl border border-slate-800 bg-slate-800 p-4"
+                  >
 
-                    <p className="font-semibold">
-                      {Math.floor(
-                        session.seconds / 60
-                      )} min
-                    </p>
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+
+                      {/* WORKOUT INFO */}
+
+                      <div>
+
+                        <h3 className="font-semibold text-white">
+                          {session.name ||
+                            session.planName ||
+                            "Completed Workout"}
+                        </h3>
+
+                        {session.planName &&
+                          session.name && (
+
+                          <p className="mt-1 text-sm text-slate-400">
+                            {session.planName}
+                          </p>
+
+                        )}
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {formatDate(
+                            session.completedAt
+                          )}
+                        </p>
+
+                      </div>
+
+                      {/* STATS */}
+
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm sm:grid-cols-4">
+
+                        <div>
+
+                          <p className="text-slate-400">
+                            Duration
+                          </p>
+
+                          <p className="mt-1 font-semibold text-white">
+                            {formatDuration(
+                              duration
+                            )}
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-slate-400">
+                            Sets
+                          </p>
+
+                          <p className="mt-1 font-semibold text-white">
+                            {completedSets}/
+                            {totalSets}
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-slate-400">
+                            Completion
+                          </p>
+
+                          <p className="mt-1 font-semibold text-emerald-400">
+                            {completion}%
+                          </p>
+
+                        </div>
+
+                        <div>
+
+                          <p className="text-slate-400">
+                            Calories
+                          </p>
+
+                          <p className="mt-1 font-semibold text-orange-400">
+                            {calories} kcal
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
                   </div>
 
-                  <div>
-                    <p className="text-slate-400">
-                      Volume
-                    </p>
-
-                    <p className="font-semibold">
-                      {session.totalVolume.toLocaleString()} kg
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-400">
-                      Calories
-                    </p>
-
-                    <p className="font-semibold">
-                      {session.calories} kcal
-                    </p>
-                  </div>
-
-                </div>
-
-              </div>
-
-            ))}
+                );
+              }
+            )}
 
         </div>
 

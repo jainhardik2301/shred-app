@@ -8,7 +8,6 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
-import { defaultWorkoutPlans } from "../data/defaultWorkoutPlans";
 import { exerciseLibrary } from "../data/exerciseLibrary";
 
 const AppContext = createContext();
@@ -64,7 +63,7 @@ currentDate: new Date().toLocaleDateString("en-CA"),
   
   meals: [],
 
-  workoutPlans: defaultWorkoutPlans,
+  workoutPlans: [],
 
   activeWorkout: null,
 
@@ -72,45 +71,6 @@ currentDate: new Date().toLocaleDateString("en-CA"),
 
   habitHistory: {},
 };
-
-function mergeWorkoutPlans(savedPlans = []) {
-  const validSavedPlans = Array.isArray(savedPlans)
-    ? savedPlans
-    : [];
-
-  const customPlans = validSavedPlans.filter(
-    (plan) =>
-      !defaultWorkoutPlans.some(
-        (defaultPlan) =>
-          String(defaultPlan.id) ===
-          String(plan.id)
-      )
-  );
-
-  const savedDefaultPlans = defaultWorkoutPlans.map(
-    (defaultPlan) => {
-      const savedVersion =
-        validSavedPlans.find(
-          (plan) =>
-            String(plan.id) ===
-            String(defaultPlan.id)
-        );
-
-      return savedVersion
-        ? {
-            ...defaultPlan,
-            ...savedVersion,
-            isDefault: true,
-          }
-        : defaultPlan;
-    }
-  );
-
-  return [
-    ...savedDefaultPlans,
-    ...customPlans,
-  ];
-}
 
 function initializeData() {
   const saved =
@@ -174,9 +134,9 @@ currentDate:
         : [],
 
       workoutPlans:
-        mergeWorkoutPlans(
-          parsed.workoutPlans
-        ),
+  Array.isArray(parsed.workoutPlans)
+    ? parsed.workoutPlans
+    : [],
 
       activeSchedule: {
         ...defaultSchedule,
@@ -313,9 +273,9 @@ export function AppProvider({
               : [],
 
           workoutPlans:
-            mergeWorkoutPlans(
-              saved.workoutPlans
-            ),
+  Array.isArray(saved.workoutPlans)
+    ? saved.workoutPlans
+    : [],
 
           activeSchedule: {
             ...defaultSchedule,
@@ -441,35 +401,7 @@ export function AppProvider({
     cloudReady,
   ]);
 
-    useEffect(() => {
-  setAppData((prev) => {
-    const existingPlans = prev?.workoutPlans || [];
-
-    const mergedPlans = [
-      ...defaultWorkoutPlans.filter(
-        (defaultPlan) =>
-          !existingPlans.some(
-            (plan) =>
-              String(plan.id) === String(defaultPlan.id)
-          )
-      ),
-      ...existingPlans,
-    ];
-
-    if (
-      mergedPlans.length === existingPlans.length
-    ) {
-      return prev;
-    }
-
-    return {
-      ...prev,
-      workoutPlans: mergedPlans,
-    };
-  });
-}, [setAppData]);
-
-useEffect(() => {
+  useEffect(() => {
   if (
     authLoading ||
     !user ||
@@ -867,6 +799,22 @@ function updateMeal(
     }));
   }
 
+  function setActiveWorkoutPlan(planId) {
+  setAppData((prev) => ({
+    ...prev,
+
+    workoutPlans: (
+      prev.workoutPlans || []
+    ).map((plan) => ({
+      ...plan,
+
+      isActive:
+        String(plan.id) ===
+        String(planId),
+    })),
+  }));
+}
+  
   function addWorkoutPlan(plan) {
     setAppData((prev) => ({
       ...prev,
@@ -958,6 +906,47 @@ function updateMeal(
     }));
   }
 
+  function updateExerciseInWorkoutPlan(
+  planId,
+  exerciseId,
+  updatedExercise
+) {
+  setAppData((prev) => ({
+    ...prev,
+
+    workoutPlans: (
+      prev.workoutPlans || []
+    ).map((plan) =>
+      String(plan.id) === String(planId)
+        ? {
+            ...plan,
+
+            exercises: (
+              plan.exercises || []
+            ).map((exercise) => {
+              const currentId =
+                typeof exercise === "object"
+                  ? exercise.id
+                  : exercise;
+
+              if (
+                String(currentId) !==
+                String(exerciseId)
+              ) {
+                return exercise;
+              }
+
+              return {
+                ...updatedExercise,
+                id: currentId,
+              };
+            }),
+          }
+        : plan
+    ),
+  }));
+}
+  
   function renameWorkoutPlan(
     planId,
     name
@@ -1038,6 +1027,21 @@ function updateMeal(
     });
   }
 
+  function updateWorkoutPlan(updatedPlan) {
+  setAppData((prev) => ({
+    ...prev,
+
+    workoutPlans: (
+      prev.workoutPlans || []
+    ).map((plan) =>
+      String(plan.id) ===
+      String(updatedPlan.id)
+        ? updatedPlan
+        : plan
+    ),
+  }));
+}
+
   function assignWorkoutToDay(
     day,
     planId
@@ -1082,157 +1086,152 @@ function updateMeal(
     );
   }
 
-  function startWorkoutSession() {
-    const today =
-      new Date().toLocaleDateString(
-        "en-US",
-        {
-          weekday:
-            "long",
-        }
+ function startWorkoutSession(
+  planId,
+  dayId
+) {
+  setAppData((prev) => {
+
+    // ---------------------------------
+    // FIND PLAN
+    // ---------------------------------
+
+    const plan = (
+      prev.workoutPlans || []
+    ).find(
+      (item) =>
+        String(item.id) ===
+        String(planId)
+    );
+
+    if (!plan) {
+      console.error(
+        "Workout plan not found."
       );
 
-    setAppData((prev) => {
-      if (
-        prev.activeWorkout
-      ) {
-        return {
-          ...prev,
+      return prev;
+    }
 
-          activeWorkout: {
-            ...prev.activeWorkout,
+    // ---------------------------------
+    // FIND WORKOUT DAY
+    // ---------------------------------
 
-            running: true,
-          },
-        };
-      }
+    const workoutDay = (
+      plan.days || []
+    ).find(
+      (day) =>
+        String(day.id) ===
+        String(dayId)
+    );
 
-      const schedule = {
-        ...defaultSchedule,
+    if (!workoutDay) {
+      console.error(
+        "Workout day not found."
+      );
 
-        ...(prev.activeSchedule ||
-          {}),
-      };
+      return prev;
+    }
 
-      const planId =
-        schedule[today];
+    if (workoutDay.isRestDay) {
+      console.error(
+        "Cannot start workout on a recovery day."
+      );
 
-      const plans =
-        mergeWorkoutPlans(
-          prev.workoutPlans
+      return prev;
+    }
+
+    // ---------------------------------
+    // BUILD ACTIVE WORKOUT
+    // ---------------------------------
+
+    const resolvedExercises = (
+      workoutDay.exercises || []
+    ).map((exercise) => {
+
+      const setCount =
+        Math.max(
+          1,
+          Number(
+            exercise.sets
+          ) || 3
         );
 
-      const plan =
-        plans.find(
-          (item) =>
-            String(
-              item.id
-            ) ===
-            String(planId)
+      const targetReps =
+        String(
+          exercise.reps ||
+          "8-12"
         );
 
-      if (!plan) {
-        console.error(
-          `No workout plan found for ${today}.`,
+      const workoutSets =
+        Array.from(
           {
-            planId,
-            schedule,
-            plans,
-          }
-        );
+            length: setCount,
+          },
+          () => ({
+            reps: targetReps,
 
-        return prev;
-      }
+            weight: "",
 
-      const exercises = (
-        plan.exercises ||
-        []
-      )
-        .map(
-          getExerciseDetails
-        )
-        .filter(Boolean)
-        .map(
-          (exercise) => {
-            const match =
-              String(
-                exercise.sets ||
-                  ""
-              ).match(
-                /(\d+)/
-              );
-
-            const numberOfSets =
-              match
-                ? Number(
-                    match[1]
-                  )
-                : 3;
-
-            return {
-              id:
-                exercise.id,
-
-              name:
-                exercise.name,
-
-              equipment:
-                exercise.equipment,
-
-              target:
-                exercise.sets,
-
-              sets:
-                Array.from(
-                  {
-                    length:
-                      numberOfSets,
-                  },
-
-                  () => ({
-                    weight: "",
-                    reps: "",
-                    completed:
-                      false,
-                  })
-                ),
-            };
-          }
+            completed: false,
+          })
         );
 
       return {
-        ...prev,
+        ...exercise,
 
-        workoutPlans:
-          plans,
+        targetSets:
+          setCount,
 
-        activeSchedule:
-          schedule,
+        targetReps,
 
-        activeWorkout: {
-          id: Date.now(),
+        // During an active workout,
+        // sets becomes an array used
+        // for workout tracking.
 
-          planId:
-            plan.id,
-
-          planName:
-            plan.name,
-
-          day:
-            today,
-
-          startedAt:
-            new Date().toISOString(),
-
-          seconds: 0,
-
-          running: true,
-
-          exercises,
-        },
+        sets:
+          workoutSets,
       };
     });
-  }
+
+    // ---------------------------------
+    // CREATE ACTIVE WORKOUT
+    // ---------------------------------
+
+    return {
+      ...prev,
+
+      activeWorkout: {
+        id:
+          `workout-${Date.now()}`,
+
+        planId:
+          plan.id,
+
+        planName:
+          plan.name,
+
+        dayId:
+          workoutDay.id,
+
+        day:
+          workoutDay.day,
+
+        name:
+          workoutDay.name,
+
+        startedAt:
+          new Date().toISOString(),
+
+        seconds: 0,
+
+        running: true,
+
+        exercises:
+          resolvedExercises,
+      },
+    };
+  });
+}
 
   function pauseWorkoutSession() {
     setAppData((prev) => {
@@ -1429,89 +1428,108 @@ function updateMeal(
   }
 
   function finishWorkoutSession() {
-    setAppData((prev) => {
-      const workout =
-        prev.activeWorkout;
+  setAppData((prev) => {
+    const activeWorkout =
+      prev.activeWorkout;
 
-      if (!workout) {
-        return prev;
-      }
+    if (!activeWorkout) {
+      return prev;
+    }
 
-      const totalVolume =
-        (
-          workout.exercises ||
-          []
-        ).reduce(
+    // Calculate completed sets
+
+    const totalSets =
+      (
+        activeWorkout.exercises ||
+        []
+      ).reduce(
+        (total, exercise) =>
+          total +
           (
-            workoutTotal,
-            exercise
-          ) =>
-            workoutTotal +
-            (
-              exercise.sets ||
-              []
-            ).reduce(
-              (
-                setTotal,
-                set
-              ) => {
-                if (
-                  !set.completed
-                ) {
-                  return setTotal;
-                }
+            exercise.sets || []
+          ).length,
+        0
+      );
 
-                return (
-                  setTotal +
-                  Number(
-                    set.weight ||
-                      0
-                  ) *
-                    Number(
-                      set.reps ||
-                        0
-                    )
-                );
-              },
-              0
-            ),
+    const completedSets =
+      (
+        activeWorkout.exercises ||
+        []
+      ).reduce(
+        (total, exercise) =>
+          total +
+          (
+            exercise.sets || []
+          ).filter(
+            (set) =>
+              set.completed
+          ).length,
+        0
+      );
+
+    // Same calorie calculation currently
+    // used by WorkoutSessionCard
+
+    const calories =
+      Math.floor(
+        (
+          activeWorkout.seconds ||
           0
-        );
+        ) * 0.18
+      );
 
-      const completedWorkout =
-        {
-          ...workout,
+    const completedWorkout = {
+      ...activeWorkout,
 
-          running: false,
+      id:
+        `history-${Date.now()}`,
 
-          completedAt:
-            new Date().toISOString(),
+      sessionId:
+        activeWorkout.id,
 
-          totalVolume,
+      completedAt:
+        new Date().toISOString(),
 
-          calories:
-            Math.floor(
-              (workout.seconds ||
-                0) *
-                0.18
-            ),
-        };
+      durationSeconds:
+        activeWorkout.seconds ||
+        0,
 
-      return {
-        ...prev,
+      calories,
 
-        activeWorkout:
-          null,
+      totalSets,
 
-        workoutHistory: [
-          ...(prev.workoutHistory ||
-            []),
+      completedSets,
 
-          completedWorkout,
-        ],
-      };
-    });
-  }
+      completionPercentage:
+        totalSets > 0
+          ? Math.round(
+              (
+                completedSets /
+                totalSets
+              ) * 100
+            )
+          : 0,
+
+      running: false,
+
+      status: "completed",
+    };
+
+    return {
+      ...prev,
+
+      workoutHistory: [
+        ...(
+          prev.workoutHistory ||
+          []
+        ),
+        completedWorkout,
+      ],
+
+      activeWorkout: null,
+    };
+  });
+}
 
   return (
     <AppContext.Provider
@@ -1525,12 +1543,15 @@ function updateMeal(
         updateMeal,
         updateWeight,
 
+        setActiveWorkoutPlan,
         addWorkoutPlan,
         addExerciseToWorkoutPlan,
         removeExerciseFromWorkoutPlan,
+        updateExerciseInWorkoutPlan,
         renameWorkoutPlan,
         deleteWorkoutPlan,
         duplicateWorkoutPlan,
+        updateWorkoutPlan,
         assignWorkoutToDay,
 
         startWorkoutSession,
