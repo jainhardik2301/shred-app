@@ -76,16 +76,14 @@ export default function ExercisePicker({
           setIsSearching(true);
           setSearchError("");
 
-          const response =
-            await fetch(
-              `http://localhost:3001/api/exercise-search?q=${encodeURIComponent(
-                query
-              )}`,
-              {
-                signal:
-                  controller.signal,
-              }
-            );
+          const API_BASE_URL =
+  import.meta.env.DEV
+    ? "http://localhost:3001"
+    : "https://shred-ai.onrender.com";
+
+const response = await fetch(
+  `${API_BASE_URL}/api/exercise-search?q=${encodeURIComponent(search)}`
+);
 
           if (!response.ok) {
             throw new Error(

@@ -137,9 +137,14 @@ export default function WorkoutPlans({
         limitations: [],
       };
 
+      const API_BASE_URL =
+  import.meta.env.DEV
+    ? "http://localhost:3001"
+    : "https://shred-ai.onrender.com";
+      
       const response =
         await fetch(
-          "http://localhost:3001/api/workout-plan/generate",
+          `${API_BASE_URL}/api/workout-plan/generate`,
           {
             method: "POST",
 
