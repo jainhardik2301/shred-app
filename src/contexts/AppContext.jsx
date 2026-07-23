@@ -130,6 +130,8 @@ assessment: null,
 // Personalized AI nutrition plan
 nutritionPlan: null,
 
+// AI-generated daily coaching insight
+dailyCoach: null,
 };
 
 function initializeData() {

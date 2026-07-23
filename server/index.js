@@ -1314,17 +1314,22 @@ RETURN EXACTLY THIS STRUCTURE:
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite",
-      contents: prompt,
-    });
+    const response =
+  await ai.models.generateContent({
+    model: "gemini-3.1-flash-lite",
+    contents: prompt,
+  });
 
-    let text = response.text || "";
+let text =
+  response.text || "";
 
-    text = text
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
+text = text
+  .replace(/```json/gi, "")
+  .replace(/```/g, "")
+  .trim();
+
+const dailyCoach =
+  JSON.parse(text);
 
     const nutritionPlan = JSON.parse(text);
 
@@ -1346,6 +1351,179 @@ RETURN EXACTLY THIS STRUCTURE:
     return res.status(500).json({
       error:
         "Unable to generate your personalized nutrition plan right now.",
+    });
+  }
+});
+
+app.post("/api/daily-coach/generate", async (req, res) => {
+  try {
+    const {
+      onboardingProfile,
+      assessment,
+      nutritionPlan,
+      activeWorkoutPlan,
+      todayWorkout,
+      todayProgress,
+      workoutCompletedToday,
+      currentDateTime,
+    } = req.body;
+
+    if (!onboardingProfile) {
+      return res.status(400).json({
+        error: "Onboarding profile is required.",
+      });
+    }
+
+    const prompt = `
+You are SHRED AI, a highly personalized fitness, nutrition,
+habit and recovery coach.
+
+Your job is to analyze the user's CURRENT DAY and identify
+the SINGLE MOST IMPORTANT action or focus that will help them
+make progress today.
+
+This is not a general motivational message.
+
+Your recommendation must be based on the user's actual profile,
+goals, current progress, workout schedule, nutrition progress,
+activity and recovery context.
+
+USER PROFILE:
+${JSON.stringify(onboardingProfile, null, 2)}
+
+PERSONALIZED ASSESSMENT:
+${JSON.stringify(assessment || {}, null, 2)}
+
+ACTIVE NUTRITION PLAN:
+${JSON.stringify(nutritionPlan || {}, null, 2)}
+
+ACTIVE WORKOUT PLAN:
+${JSON.stringify(activeWorkoutPlan || {}, null, 2)}
+
+TODAY'S SCHEDULED WORKOUT:
+${JSON.stringify(todayWorkout || {}, null, 2)}
+
+TODAY'S CURRENT PROGRESS:
+${JSON.stringify(todayProgress || {}, null, 2)}
+
+WORKOUT COMPLETED TODAY:
+${workoutCompletedToday ? "Yes" : "No"}
+
+CURRENT DATE AND TIME:
+${currentDateTime || new Date().toISOString()}
+
+
+COACHING RULES:
+
+1. Identify the SINGLE highest-priority focus for the user
+right now.
+
+2. Consider the current time of day before evaluating progress.
+For example, low calories or protein early in the morning is
+normal and should not automatically trigger a warning.
+
+3. Compare actual progress against personalized daily targets
+for calories, protein, water and steps.
+
+4. Consider whether today's workout is scheduled, completed,
+in progress, or a rest day.
+
+5. If the workout is completed, prioritize recovery when
+appropriate, including protein, hydration, mobility or sleep.
+
+6. If a workout is scheduled but not completed, consider the
+time of day before deciding whether training should be the
+priority.
+
+7. Consider the user's known injuries, medical limitations,
+lifestyle challenges, cravings, sleep patterns and work
+schedule when relevant.
+
+8. Do not provide medical diagnoses.
+
+9. Do not recommend exercises or activities that conflict with
+the user's reported injuries or restrictions.
+
+10. Avoid generic motivation such as:
+"Keep going"
+"Stay consistent"
+"You've got this"
+
+Every recommendation must contain a specific reason and
+a practical next action.
+
+11. Do not criticize the user for incomplete progress early
+in the day.
+
+12. Keep the main insight concise enough to display on a
+Dashboard.
+
+13. Generate 2 to 3 specific action steps that the user can
+realistically complete today.
+
+14. The tone should be supportive, intelligent, concise and
+practical.
+
+15. Do not invent tracked data that is not present in the
+provided context.
+
+16. If important tracking data is unavailable, base the
+recommendation only on the information that is available.
+
+17. Return ONLY valid JSON. Do not use markdown or code fences.
+
+
+RETURN EXACTLY THIS JSON STRUCTURE:
+
+{
+  "priority": "nutrition | workout | movement | hydration | recovery | sleep | general",
+
+  "title": "Short personalized headline",
+
+  "insight": "2-3 sentence personalized explanation of why this is today's most important focus.",
+
+  "actions": [
+    "Specific practical action 1",
+    "Specific practical action 2",
+    "Specific practical action 3"
+  ],
+
+  "reason": "Short explanation of the key data or context that triggered this recommendation.",
+
+  "generatedAt": "ISO timestamp"
+}
+`;
+
+    const response =
+  await ai.models.generateContent({
+    model: "gemini-3.1-flash-lite",
+    contents: prompt,
+  });
+
+let text = response.text || "";
+
+    text = text
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const dailyCoach =
+      JSON.parse(text);
+
+    dailyCoach.generatedAt =
+      new Date().toISOString();
+
+    res.json(dailyCoach);
+
+  } catch (error) {
+    console.error(
+      "Daily Coach Generation Error:",
+      error
+    );
+
+    res.status(500).json({
+      error:
+        "Unable to generate today's coaching insight.",
     });
   }
 });
