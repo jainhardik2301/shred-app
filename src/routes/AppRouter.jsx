@@ -8,7 +8,7 @@ import ProtectedRoute from "../components/auth/ProtectedRoute";
 import AppLayout from "../layout/AppLayout";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword/ResetPassword";
-
+import Assessment from "../pages/Assessment/Assessment";
 import Login from "../pages/Login/Login";
 import Register from "../pages/Register/Register";
 import Onboarding from "../pages/Onboarding/Onboarding";
@@ -27,6 +27,8 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
 
+        <Route path="/assessment" element={<Assessment />} />
+        
         {/* PUBLIC ROUTES */}
 
         <Route

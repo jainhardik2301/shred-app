@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../../contexts/AppContext";
 import NewWorkoutModal from "./NewWorkoutModal";
+import { generateWorkoutPlan } from "../../services/workoutPlanService";
 
 export default function WorkoutPlans({
   selectedPlan,
@@ -105,105 +106,118 @@ export default function WorkoutPlans({
   // -----------------------------------------
 
   async function handleGenerateAIPlan() {
-    try {
-      setIsGenerating(true);
-      setGenerateError("");
+  try {
+    setIsGenerating(true);
+    setGenerateError("");
 
-      // TEMPORARY TEST PROFILE
-      // Later replaced with onboarding data.
+    const onboarding =
+      appData?.onboardingProfile || {};
 
-      const testProfile = {
-        goal:
-          "Fat loss and muscle gain",
+    const assessment =
+      appData?.assessment || {};
 
-        experienceLevel:
-          "Beginner",
-
-        workoutDaysPerWeek: 4,
-
-        sessionDuration: 60,
-
-        location: "Gym",
-
-        equipment: [
-          "Full gym",
-        ],
-
-        preferences: [
-          "Strength training",
-          "Cardio",
-        ],
-
-        limitations: [],
-      };
-
-      const API_BASE_URL =
-  import.meta.env.DEV
-    ? "http://localhost:3001"
-    : "https://shred-ai.onrender.com";
-      
-      const response =
-        await fetch(
-          `${API_BASE_URL}/api/workout-plan/generate`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body:
-              JSON.stringify(
-                testProfile
-              ),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-            "Unable to generate workout plan."
-        );
-      }
-
-      if (!data.plan) {
-        throw new Error(
-          "No workout plan was returned."
-        );
-      }
-
-      const generatedPlan = {
-        ...data.plan,
-        isActive: true,
-      };
-
-      addWorkoutPlan(
-        generatedPlan
+    if (!Object.keys(onboarding).length) {
+      throw new Error(
+        "Your onboarding profile could not be found."
       );
-
-      setSelectedPlan(
-        generatedPlan
-      );
-
-    } catch (error) {
-      console.error(
-        "AI Plan Generation Error:",
-        error
-      );
-
-      setGenerateError(
-        error.message ||
-          "Unable to generate workout plan."
-      );
-
-    } finally {
-      setIsGenerating(false);
     }
+
+    const targets =
+      assessment?.startingTargets || {};
+
+    const workoutProfile = {
+      ...onboarding,
+
+      goal:
+        onboarding.goal ||
+        appData?.profile?.goal ||
+        "General Fitness",
+
+      experienceLevel:
+        onboarding.experienceLevel ||
+        "Beginner",
+
+      workoutDaysPerWeek:
+        Number(onboarding.workoutDays) ||
+        Number(targets.workoutDays) ||
+        3,
+
+      sessionDuration:
+        Number(onboarding.sessionDuration) ||
+        45,
+
+      location:
+        onboarding.workoutLocation ||
+        "Home",
+
+      equipment:
+        onboarding.equipment || [],
+
+      preferences:
+        onboarding.trainingPreferences || [],
+
+      limitations: [
+        ...(Array.isArray(onboarding.injuries)
+          ? onboarding.injuries
+          : onboarding.injuries
+            ? [onboarding.injuries]
+            : []),
+
+        ...(Array.isArray(onboarding.physicalLimitations)
+          ? onboarding.physicalLimitations
+          : onboarding.physicalLimitations
+            ? [onboarding.physicalLimitations]
+            : []),
+
+        ...(Array.isArray(onboarding.medicalRestrictions)
+          ? onboarding.medicalRestrictions
+          : onboarding.medicalRestrictions
+            ? [onboarding.medicalRestrictions]
+            : []),
+      ],
+
+      assessment: {
+        trainingAssessment:
+          assessment?.trainingAssessment || "",
+
+        activityAssessment:
+          assessment?.activityAssessment || "",
+
+        safetyNotes:
+          assessment?.safetyNotes || "",
+      },
+    };
+
+    const generatedPlan =
+      await generateWorkoutPlan(
+        workoutProfile
+      );
+
+    const finalPlan = {
+      ...generatedPlan,
+      isActive: true,
+      source: "ai_generated",
+    };
+
+    addWorkoutPlan(finalPlan);
+
+    setSelectedPlan(finalPlan);
+
+  } catch (error) {
+    console.error(
+      "AI Plan Generation Error:",
+      error
+    );
+
+    setGenerateError(
+      error.message ||
+        "Unable to generate workout plan."
+    );
+
+  } finally {
+    setIsGenerating(false);
   }
+}
 
   return (
     <>

@@ -922,6 +922,434 @@ Return exactly this structure:
   }
 });
 
+// =============================================
+// AI ONBOARDING ASSESSMENT
+// =============================================
+
+app.post("/api/assessment/generate", async (req, res) => {
+  try {
+    const profile = req.body;
+
+    if (!profile || typeof profile !== "object") {
+      return res.status(400).json({
+        error: "Onboarding profile is required.",
+      });
+    }
+
+    const prompt = `
+You are the AI health, nutrition and fitness assessment engine for SHRED,
+a personalized health and fitness application.
+
+Your task is to analyze a user's complete onboarding profile and provide
+a practical, personalized starting assessment.
+
+USER ONBOARDING PROFILE:
+
+${JSON.stringify(profile, null, 2)}
+
+IMPORTANT RULES:
+
+1. Personalize the assessment specifically to the user's:
+- Current weight and target weight
+- Primary goal and motivations
+- Activity level and daily movement
+- Work and sitting habits
+- Sleep and stress
+- Nutrition habits
+- Water intake
+- Diet preference
+- Protein preferences
+- Training experience
+- Available equipment
+- Workout schedule
+- Behavioural challenges
+- Confidence and commitment
+- Medical conditions
+- Injuries and physical limitations
+- Nutritional deficiencies
+
+2. Identify the user's biggest opportunities for improvement.
+
+3. Be realistic about the user's target weight and target date.
+Do not promise a specific amount of weight loss.
+
+4. Do not recommend crash diets, starvation diets, water-only fasting,
+extreme calorie restriction or unsafe exercise practices.
+
+5. Do not diagnose medical conditions or provide medical treatment.
+
+6. If the user reports medical conditions, injuries, medications,
+restrictions or concerning symptoms, include an appropriate safety note.
+
+7. Recommendations must be practical and sustainable.
+
+8. Calculate or estimate appropriate targets where sufficient data exists,
+but clearly treat them as starting estimates rather than medical prescriptions.
+
+9. Keep observations concise enough to display in a fitness application.
+
+10. Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not include text outside the JSON.
+
+11. Generate a complete 7-day meal plan from Monday through Sunday.
+
+12. Every day must contain practical meal recommendations based on the user's preferred number of meals per day.
+
+13. Include appropriate snacks only when they fit the user's meal frequency, calorie target, lifestyle or hunger patterns.
+
+14. Avoid making all seven days identical. Provide meaningful food variety while keeping ingredients practical and accessible.
+
+15. Reuse ingredients intelligently where appropriate so the weekly plan remains realistic and does not require buying completely different ingredients every day.
+
+16. Every day's meals should approximately align with the user's daily calorie and protein targets.
+
+17. Provide practical portion guidance such as grams, bowls, cups, rotis or serving sizes where appropriate. Do not claim laboratory-level nutritional precision.
+
+18. For Indian users or users whose food preferences indicate Indian eating patterns, prioritize practical Indian meal options while incorporating other foods they already consume or prefer.
+
+19. Respect vegetarian, vegan, non-vegetarian, allergy and intolerance information strictly across all seven days.
+
+20. Include higher-protein alternatives where useful, especially when the user's protein target is relatively high.
+
+21. The weekly meal plan should be sustainable and flexible rather than a rigid clinical diet prescription.
+
+RETURN EXACTLY THIS STRUCTURE:
+
+{
+  "summary": "2-4 sentence personalized overall assessment.",
+
+  "keyObservations": [
+    "Observation 1",
+    "Observation 2",
+    "Observation 3"
+  ],
+
+  "strengths": [
+    "Existing positive factor 1",
+    "Existing positive factor 2"
+  ],
+
+  "priorityAreas": [
+    {
+      "title": "Priority title",
+      "description": "Why this matters and what the user should focus on."
+    }
+  ],
+
+  "goalAssessment": {
+    "status": "realistic",
+    "message": "Assessment of the user's goal and timeline."
+  },
+
+  "nutritionAssessment": {
+    "summary": "Personalized nutrition assessment.",
+    "recommendations": [
+      "Recommendation 1",
+      "Recommendation 2"
+    ]
+  },
+
+  "activityAssessment": {
+    "summary": "Personalized activity and lifestyle assessment.",
+    "recommendations": [
+      "Recommendation 1",
+      "Recommendation 2"
+    ]
+  },
+
+  "trainingAssessment": {
+    "summary": "Personalized training assessment.",
+    "recommendations": [
+      "Recommendation 1",
+      "Recommendation 2"
+    ]
+  },
+
+  "recoveryAssessment": {
+    "summary": "Personalized sleep, stress and recovery assessment.",
+    "recommendations": [
+      "Recommendation 1",
+      "Recommendation 2"
+    ]
+  },
+
+  "startingTargets": {
+    "dailyCalories": 0,
+    "proteinGrams": 0,
+    "waterLiters": 0,
+    "dailySteps": 0,
+    "workoutDays": 0
+  },
+
+  "expectedProgress": {
+    "summary": "Realistic description of what progress may look like."
+  },
+
+  "safetyNotes": [
+    "Relevant safety note if applicable"
+  ]
+}
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+
+    let text = response.text || "";
+
+    text = text
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const assessment = JSON.parse(text);
+
+    return res.json({
+      assessment,
+      source: "AI",
+    });
+  } catch (error) {
+    console.error(
+      "Assessment Generation Error:",
+      error
+    );
+
+    return res.status(500).json({
+      error:
+        "Unable to generate your personalized assessment right now.",
+    });
+  }
+});
+
+// =============================================
+// AI PERSONALIZED NUTRITION PLAN
+// =============================================
+
+app.post("/api/nutrition-plan/generate", async (req, res) => {
+  try {
+    const { profile, assessment } = req.body;
+
+    if (!profile || typeof profile !== "object") {
+      return res.status(400).json({
+        error: "User profile is required.",
+      });
+    }
+
+    const prompt = `
+You are the AI nutrition planning engine for SHRED,
+a personalized health and fitness application.
+
+Create a practical and sustainable personalized nutrition plan
+based on the user's onboarding profile and AI health assessment.
+
+USER ONBOARDING PROFILE:
+
+${JSON.stringify(profile, null, 2)}
+
+USER AI ASSESSMENT:
+
+${JSON.stringify(assessment || {}, null, 2)}
+
+IMPORTANT RULES:
+
+1. Personalize the plan based on:
+- Primary fitness goal
+- Current and target weight
+- Calorie and protein targets
+- Diet type
+- Food preferences
+- Foods disliked
+- Allergies and intolerances
+- Typical existing diet
+- Meal frequency preference
+- Fasting preference
+- Hunger and cravings
+- Binge eating tendencies
+- Water intake
+- Work schedule and lifestyle
+- Restaurant/junk food frequency
+- Medical conditions if provided
+
+2. Respect the user's dietary restrictions.
+For example, never recommend eggs or meat to a strict vegetarian.
+
+3. Use foods that are practical and culturally appropriate
+based on the user's existing diet and preferences.
+
+4. Do NOT prescribe crash diets, starvation diets,
+water-only fasting or extreme calorie restriction.
+
+5. Do NOT treat suggested meals as food the user has already consumed.
+
+6. Meal examples are recommendations, not mandatory prescriptions.
+
+7. Keep the plan practical enough for long-term adherence.
+
+8. Protein recommendations should align approximately with
+the user's personalized protein target.
+
+9. Daily meal examples should approximately align with the
+user's calorie target but do not claim exact nutritional precision.
+
+10. Return ONLY valid JSON.
+Do not use markdown.
+Do not use code fences.
+Do not include text outside JSON.
+
+RETURN EXACTLY THIS STRUCTURE:
+
+{
+  "name": "My Personalized Nutrition Plan",
+
+  "summary": "Short personalized overview of the nutrition strategy.",
+
+  "dailyTargets": {
+    "calories": 0,
+    "protein": 0,
+    "water": 0
+  },
+
+  "mealStructure": {
+    "mealsPerDay": 3,
+    "description": "Recommended daily meal structure."
+  },
+
+  "weeklyMealPlan": [
+  {
+    "day": "Monday",
+    "meals": [
+      {
+        "meal": "Breakfast",
+        "foods": [
+          "Food suggestion with practical portion guidance",
+          "Food suggestion with practical portion guidance"
+        ],
+        "guidance": "Short personalized guidance for this meal."
+      },
+      {
+        "meal": "Lunch",
+        "foods": [
+          "Food suggestion with practical portion guidance",
+          "Food suggestion with practical portion guidance"
+        ],
+        "guidance": "Short personalized guidance for this meal."
+      },
+      {
+        "meal": "Evening Snack",
+        "foods": [
+          "Food suggestion with practical portion guidance"
+        ],
+        "guidance": "Short personalized guidance for this meal."
+      },
+      {
+        "meal": "Dinner",
+        "foods": [
+          "Food suggestion with practical portion guidance",
+          "Food suggestion with practical portion guidance"
+        ],
+        "guidance": "Short personalized guidance for this meal."
+      }
+    ]
+  },
+  {
+    "day": "Tuesday",
+    "meals": []
+  },
+  {
+    "day": "Wednesday",
+    "meals": []
+  },
+  {
+    "day": "Thursday",
+    "meals": []
+  },
+  {
+    "day": "Friday",
+    "meals": []
+  },
+  {
+    "day": "Saturday",
+    "meals": []
+  },
+  {
+    "day": "Sunday",
+    "meals": []
+  }
+],
+
+  "proteinStrategy": [
+    "Personalized protein recommendation"
+  ],
+
+  "hydrationStrategy": [
+    "Personalized hydration recommendation"
+  ],
+
+  "cravingStrategy": [
+    "Personalized craving management recommendation"
+  ],
+
+  "eatingOutStrategy": [
+    "Personalized restaurant or social eating recommendation"
+  ],
+
+  "foodsToPrioritize": [
+    "Food or food group"
+  ],
+
+  "foodsToLimit": [
+    "Food or food group"
+  ],
+
+  "flexibilityRules": [
+    "Practical sustainability rule"
+  ],
+
+  "notes": [
+    "Any relevant personalized note"
+  ]
+}
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+
+    let text = response.text || "";
+
+    text = text
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    const nutritionPlan = JSON.parse(text);
+
+    return res.json({
+      nutritionPlan: {
+        ...nutritionPlan,
+        id: `nutrition-plan-${Date.now()}`,
+        source: "ai_onboarding",
+        createdAt: new Date().toISOString(),
+      },
+      source: "AI",
+    });
+  } catch (error) {
+    console.error(
+      "Nutrition Plan Generation Error:",
+      error
+    );
+
+    return res.status(500).json({
+      error:
+        "Unable to generate your personalized nutrition plan right now.",
+    });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, "0.0.0.0", () => {

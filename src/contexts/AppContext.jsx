@@ -24,13 +24,66 @@ const defaultSchedule = {
 
 const defaultData = {
   profile: {
-  name: "",
-  age: 0,
-  gender: "",
-  height: 0,
-  weight: 0,
-  bmi: 0,
-},
+    name: "",
+    age: 0,
+    gender: "",
+    height: 0,
+    weight: 0,
+    bmi: 0,
+  },
+
+  onboardingProfile: {
+    // Step 1 - Basic Information
+    name: "",
+    age: "",
+    gender: "",
+    height: "",
+    weight: "",
+
+    // Step 2 - Goals
+    primaryGoal: "",
+    targetWeight: "",
+    targetDate: "",
+
+    // Step 3 - Lifestyle
+    activityLevel: "",
+    occupationType: "",
+    dailySteps: "",
+    sleepHours: "",
+
+    // Step 4 - Nutrition
+    dietType: "",
+    mealsPerDay: "",
+    cookingFrequency: "",
+    nutritionChallenges: [],
+
+    // Step 5 - Training
+    experienceLevel: "",
+    workoutLocation: "",
+    workoutDays: "",
+    sessionDuration: "",
+    trainingPreferences: [],
+    equipment: [],
+
+    // Step 6 - Challenges & Commitment
+    challenges: [],
+    confidenceLevel: "",
+commitmentLevel: "",
+biggestObstacle: "",
+successVision: "",
+
+    // Step 7 - Health & Limitations
+    medicalConditions: [],
+    injuries: "",
+medicalRestrictions: "",
+medications: "",
+nutritionalDeficiencies: "",
+additionalNotes: "",
+
+    // Onboarding Status
+    completed: false,
+    completedAt: null,
+  },
 
   activeSchedule: defaultSchedule,
 
@@ -69,7 +122,14 @@ currentDate: new Date().toLocaleDateString("en-CA"),
 
   workoutHistory: [],
 
-  habitHistory: {},
+habitHistory: {},
+
+// Saved AI onboarding assessment
+assessment: null,
+
+// Personalized AI nutrition plan
+nutritionPlan: null,
+
 };
 
 function initializeData() {
@@ -816,26 +876,30 @@ function updateMeal(
 }
   
   function addWorkoutPlan(plan) {
-    setAppData((prev) => ({
+  setAppData((prev) => {
+    const existingPlans =
+      prev.workoutPlans || [];
+
+    const updatedExistingPlans =
+      plan.isActive
+        ? existingPlans.map(
+            (existingPlan) => ({
+              ...existingPlan,
+              isActive: false,
+            })
+          )
+        : existingPlans;
+
+    return {
       ...prev,
 
       workoutPlans: [
-        ...(prev.workoutPlans ||
-          []),
-
-        {
-          id: Date.now(),
-          ...plan,
-
-          exercises:
-            plan.exercises ||
-            [],
-
-          isDefault: false,
-        },
+        ...updatedExistingPlans,
+        plan,
       ],
-    }));
-  }
+    };
+  });
+}
 
   function addExerciseToWorkoutPlan(
     planId,
