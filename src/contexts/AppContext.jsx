@@ -10,6 +10,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 import { exerciseLibrary } from "../data/exerciseLibrary";
 
+
 const AppContext = createContext();
 
 const defaultSchedule = {

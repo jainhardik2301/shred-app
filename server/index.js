@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import { buildCoachContext } from "./utils/buildCoachContext.js";
 
 dotenv.config({ path: "../.env" });
 
@@ -1368,6 +1369,12 @@ app.post("/api/daily-coach/generate", async (req, res) => {
       currentDateTime,
     } = req.body;
 
+    const coachContext = buildCoachContext(req.body);
+
+    console.log("\n========== COACH CONTEXT ==========");
+console.dir(coachContext, { depth: null });
+console.log("===================================\n");
+    
     if (!onboardingProfile) {
       return res.status(400).json({
         error: "Onboarding profile is required.",
@@ -1388,29 +1395,9 @@ Your recommendation must be based on the user's actual profile,
 goals, current progress, workout schedule, nutrition progress,
 activity and recovery context.
 
-USER PROFILE:
-${JSON.stringify(onboardingProfile, null, 2)}
+PERSONALIZED USER CONTEXT:
 
-PERSONALIZED ASSESSMENT:
-${JSON.stringify(assessment || {}, null, 2)}
-
-ACTIVE NUTRITION PLAN:
-${JSON.stringify(nutritionPlan || {}, null, 2)}
-
-ACTIVE WORKOUT PLAN:
-${JSON.stringify(activeWorkoutPlan || {}, null, 2)}
-
-TODAY'S SCHEDULED WORKOUT:
-${JSON.stringify(todayWorkout || {}, null, 2)}
-
-TODAY'S CURRENT PROGRESS:
-${JSON.stringify(todayProgress || {}, null, 2)}
-
-WORKOUT COMPLETED TODAY:
-${workoutCompletedToday ? "Yes" : "No"}
-
-CURRENT DATE AND TIME:
-${currentDateTime || new Date().toISOString()}
+${JSON.stringify(coachContext, null, 2)}
 
 
 COACHING RULES:

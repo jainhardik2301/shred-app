@@ -3,7 +3,11 @@ import { useApp } from "../../contexts/AppContext";
 import { generateDailyCoachInsight } from "../../services/dailyCoachService";
 
 export default function DashboardTodayFocus() {
-  const { appData, setAppData } = useApp();
+  const {
+    appData,
+    setAppData,
+    cloudReady
+} = useApp();
 
   const [isGenerating, setIsGenerating] =
     useState(false);
@@ -191,6 +195,25 @@ export default function DashboardTodayFocus() {
       setIsGenerating(true);
       setError("");
 
+      if (
+    !cloudReady ||
+    !appData?.onboardingProfile?.completed
+) {
+    return;
+}
+
+      const todayKey = new Date().toDateString();
+
+if (
+    !forceRefresh &&
+    dailyCoach &&
+    dailyCoach.cacheKey === todayKey
+) {
+    return;
+}
+      console.log("=== DAILY COACH DATA ===");
+console.log(appData);
+      
       const coachData = {
         onboardingProfile:
           appData
@@ -230,6 +253,10 @@ export default function DashboardTodayFocus() {
           new Date().toISOString(),
       };
 
+      console.log("========== FRONTEND COACH DATA ==========");
+console.dir(coachData, { depth: null });
+console.log("========================================");
+      
       const insight =
         await generateDailyCoachInsight(
           coachData
@@ -238,7 +265,10 @@ export default function DashboardTodayFocus() {
       setAppData((prev) => ({
         ...prev,
 
-        dailyCoach: insight,
+        dailyCoach: {
+    ...insight,
+    cacheKey: new Date().toDateString()
+},
       }));
 
     } catch (err) {
@@ -262,13 +292,23 @@ export default function DashboardTodayFocus() {
   // -----------------------------------------
 
   useEffect(() => {
-    if (
-      !dailyCoach ||
-      !isInsightFromToday()
-    ) {
-      generateInsight();
-    }
-  }, []);
+
+    if (!cloudReady) return;
+
+    if (!appData?.onboardingProfile?.completed) return;
+
+    if (!appData?.assessment) return;
+
+    if (!appData?.nutritionPlan) return;
+
+    generateInsight();
+
+}, [
+    cloudReady,
+    appData?.onboardingProfile?.completed,
+    appData?.assessment,
+    appData?.nutritionPlan
+]);
 
   // -----------------------------------------
   // UI
