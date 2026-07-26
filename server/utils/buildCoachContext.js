@@ -1,5 +1,11 @@
 export function buildCoachContext(data = {}) {
 
+  const coachHistory =
+data.coachHistory || [],
+
+const coachTrends =
+data.coachTrends || {},
+  
   const profile =
     data.onboardingProfile || {};
 
